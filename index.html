@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高階企業排休與行事曆管理系統</title>
+    <style>
+        :root {
+            --primary: #0366d6;
+            --primary-hover: #0255b3;
+            --bg-main: #f6f8fa;
+            --border-color: #e1e4e8;
+            --text-main: #24292e;
+            --text-muted: #586069;
+            --calendar-today: #e8f0fe;
+            --calendar-selected: #1a73e8;
+            
+            /* 假別色彩系統 */
+            --color-事假: #ff9800;
+            --color-病假: #e91e63;
+            --color-特休: #4caf50;
+            --color-婚喪假: #9c27b0;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; color: var(--text-main); background-color: var(--bg-main); }
+        .hidden { display: none !important; }
+        
+        /* 登入牆 */
+        .login-container { max-width: 400px; margin: 100px auto; padding: 30px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+        .login-container h3 { margin-top: 0; margin-bottom: 20px; font-size: 22px; text-align: center; }
+        
+        /* 主系統排版 */
+        .main-header { background: #fff; padding: 15px 30px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .main-header h2 { margin: 0; font-size: 20px; }
+        .dashboard { display: flex; max-width: 1400px; margin: 25px auto; padding: 0 20px; gap: 25px; }
+        .left-column { flex: 2.3; display: flex; flex-direction: column; gap: 25px; min-width: 750px; }
+        .right-column { flex: 1; min-width: 320px; }
+        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .card h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid var(--bg-main); padding-bottom: 10px; }
+
+        /* 行事曆控制面板 */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-header button { width: auto; padding: 6px 14px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; }
+        .calendar-header button:hover { background: var(--bg-main); }
+        
+        /* 加大版精美行事曆網格 */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+        .weekday { font-weight: 600; color: var(--text-muted); padding: 8px 0; font-size: 14px; }
+        .day { 
+            min-height: 85px; background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; 
+            cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: flex-start; 
+            padding: 6px; box-sizing: border-box; transition: all 0.2s; 
+        }
+        .day:hover { background-color: var(--bg-main); border-color: #d1d5da; }
+        .day .day-num { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: var(--text-muted); }
+        .day.today { background-color: var(--calendar-today); }
+        .day.today .day-num { color: var(--calendar-selected); font-weight: bold; }
+        .day.selected { border: 2px solid var(--calendar-selected) !important; }
+        .day.other-month { background: #fafafa; color: #ccc; opacity: 0.5; pointer-events: none; }
+        
+        /* 行事曆上的彩色人員標籤 */
+        .day-labels { width: 100%; display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+        .user-label { 
+            font-size: 11px; padding: 2px 5px; border-radius: 4px; color: #fff; 
+            text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+            font-weight: 500; line-height: 1.2;
+        }
+
+        /* 右側近期休假名單 */
+        .leave-list { display: flex; flex-direction: column; gap: 12px; }
+        .leave-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--bg-main); border-radius: 8px; border-left: 4px solid var(--primary); }
+        .leave-item .name { font-weight: bold; }
+        .leave-item .date { font-size: 13px; color: var(--text-muted); }
+        .leave-item .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; color: #fff; font-weight: 600; }
+
+        /* 表單通用元件 */
+        input, select { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button { background-color: var(--primary); color: white; border: none; padding: 11px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
+        button:hover { background-color: var(--primary-hover); }
+        .btn-link { background: none; color: var(--primary); border: none; padding: 0; margin: 5px 0; width: auto; font-weight: normal; cursor: pointer; text-decoration: underline; font-size: 13px; }
+        .btn-danger { background-color: #d73a49; width: auto; padding: 8px 15px; }
+        .btn-danger:hover { background-color: #cb2431; }
+        .btn-secondary { background-color: #6a737d; }
+        .btn-secondary:hover { background-color: #586069; }
+        .nav-links { text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzneVEwKI-XpoLbsIzdDwb1pv4NfjpQfcZVFQJXZCr7rXbDyVqtZATkWgwu5F2rKyip/exec"; 
+    </script>
+
+    <div id="loginSection" class="login-container">
+        <h3>🔒 員工系統驗證</h3>
+        <label>使用者帳號</label>
+        <input type="text" id="acc" placeholder="請輸入帳號">
+        <label>身分驗證密碼</label>
+        <input type="password" id="pwd" placeholder="請輸入密碼">
+        <button onclick="login()">登入系統</button>
+        <div class="nav-links">
+            <button class="btn-link" onclick="switchPanel('changePwdSection')">修改密碼</button> | 
+            <button class="btn-link" onclick="switchPanel('forgotPwdSection')">忘記密碼</button>
+        </div>
+    </div>
+
+    <div id="changePwdSection" class="login-container hidden">
+        <h3>🛠️ 修改帳戶密碼</h3>
+        <input type="text" id="chgAcc" placeholder="請輸入您的帳號">
+        <input type="password" id="chgOldPwd" placeholder="請輸入舊密碼">
+        <input type="password" id="chgNewPwd" placeholder="請輸入新密碼">
+        <button onclick="changePassword()">確認修改</button>
+        <button class="btn-secondary" style="margin-top:10px;" onclick="switchPanel('loginSection')">返回登入</button>
+    </div>
+
+    <div id="forgotPwdSection" class="login-container hidden">
+        <h3>❓ 忘記密碼安全重設</h3>
+        <input type="text" id="forAcc" placeholder="請輸入您的帳號">
+        <input type="text" id="forName" placeholder="請輸入您的真實姓名">
+        <button onclick="forgotPassword()">送出驗證</button>
+        <button class="btn-secondary" style="margin-top:10px;" onclick="switchPanel('loginSection')">返回登入</button>
+    </div>
+
+
+    <div id="mainSystem" class="hidden">
+        <div class="main-header">
+            <h2>💼 內部同仁請假管理系統</h2>
+            <div>
+                <span style="margin-right: 15px; font-size:14px;">歡迎，<b id="userName" style="color:var(--primary);"></b></span>
+                <button class="btn-secondary" style="width:auto; padding:6px 12px; font-size:13px; margin-right:5px;" onclick="openNicknameModal()">修改暱稱</button>
+                <button class="btn-danger" onclick="logout()">安全登出</button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="left-column">
+                <div class="card">
+                    <div class="calendar-header">
+                        <h3 id="calendarTitle" style="margin:0; border:none; padding:0;">2026 年 6 月</h3>
+                        <div>
+                            <button onclick="moveMonth(-1)">◀ 上個月</button>
+                            <button onclick="moveMonth(1)">下個月 ▶</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        </div>
+                </div>
+
+                <div class="card">
+                    <h3>📝 填寫請假申請單</h3>
+                    <label>請假日期 (點選上方日曆格子可自動帶入)</label>
+                    <input type="date" id="leaveDate">
+                    <label>申請假別</label>
+                    <select id="leaveType">
+                        <option value="事假">事假</option>
+                        <option value="病假">病假</option>
+                        <option value="特休">特休</option>
+                        <option value="婚喪假">婚喪假</option>
+                    </select>
+                    <button onclick="submitLeave()">確認送出請假單</button>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="card" style="height: calc(100% - 50px); overflow-y: auto;">
+                    <h3>📢 近期休假同仁 (依日期排序)</h3>
+                    <div class="leave-list" id="leaveListContainer">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentYear, currentMonth;
+        let globalLeaveRecords = [];
+
+        window.onload = function() {
+            const today = new Date();
+            currentYear = today.getFullYear();
+            currentMonth = today.getMonth();
+
+            const savedToken = localStorage.getItem("session_token");
+            const savedName = localStorage.getItem("emp_name");
+            if (savedToken && savedName) {
+                unlockSystem(savedName);
+            }
+        };
+
+        function switchPanel(panelId) {
+            document.getElementById("loginSection").classList.add("hidden");
+            document.getElementById("changePwdSection").classList.add("hidden");
+            document.getElementById("forgotPwdSection").classList.add("hidden");
+            document.getElementById("mainSystem").classList.add("hidden");
+            document.getElementById(panelId).classList.remove("hidden");
+        }
+
+        function unlockSystem(name) {
+            document.getElementById("userName").innerText = name;
+            switchPanel("mainSystem");
+            fetchLeaveRecords(); 
+        }
+
+        function login() {
+            const account = document.getElementById("acc").value;
+            const password = document.getElementById("pwd").value;
+            if(!account || !password) return alert("請輸入帳密");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "login", account: account, password: password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem("session_token", data.token);
+                    localStorage.setItem("emp_name", data.name);
+                    unlockSystem(data.name);
+                } else {
+                    alert("登入失敗：" + data.message);
+                }
+            }).catch(() => alert("連線後端 API 異常"));
+        }
+
+        function fetchLeaveRecords() {
+            fetch(GAS_URL)
+            .then(res => res.json())
+            .then(data => {
+                globalLeaveRecords = data;
+                renderRightSortedList();
+                renderCalendar();
+            });
+        }
+
+        // 【右欄：近期休假名單自動排序】
+        function renderRightSortedList() {
+            const container = document.getElementById("leaveListContainer");
+            container.innerHTML = "";
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            let upcomingLeaves = globalLeaveRecords
+                .filter(item => item.date >= todayStr)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if(upcomingLeaves.length === 0) {
+                container.innerHTML = `<div style="text-align:center;color:var(--text-muted);margin-top:20px;">近期尚無同仁排休</div>`;
+                return;
+            }
+
+            upcomingLeaves.forEach(item => {
+                let cardHtml = `
+                    <div class="leave-item">
+                        <div>
+                            <div class="name">${escapeHtml(item.name)}</div>
+                            <div class="date">📅 ${escapeHtml(item.date)}</div>
+                        </div>
+                        <span class="tag" style="background-color: var(--color-${item.type}, #6a737d)">${escapeHtml(item.type)}</span>
+                    </div>`;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        // 【左欄：精美加大行事曆，直接印出人員彩色名稱】
+        function renderCalendar() {
+            const grid = document.getElementById("calendarGrid");
+            const title = document.getElementById("calendarTitle");
+            grid.innerHTML = "";
+
+            title.innerText = `${currentYear} 年 ${currentMonth + 1} 月`;
+
+            const weeks = ['日', '一', '二', '三', '四', '五', '六'];
+            weeks.forEach(w => grid.innerHTML += `<div class="weekday">${w}</div>`);
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const prevTotalDays = new Date(currentYear, currentMonth, 0).getDate();
+
+            for(let i = firstDayIndex - 1; i >= 0; i--) {
+                grid.innerHTML += `<div class="day other-month"><span class="day-num">${prevTotalDays - i}</span></div>`;
+            }
+
+            const todayObj = new Date();
+            for(let d = 1; d <= totalDays; d++) {
+                let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let isToday = (todayObj.getFullYear()===currentYear && todayObj.getMonth()===currentMonth && todayObj.getDate()===d);
+                
+                // 找出當天所有請假的人
+                let dayLeaves = globalLeaveRecords.filter(r => r.date === dateStr);
+                let labelsHtml = '<div class="day-labels">';
+                dayLeaves.forEach(leave => {
+                    labelsHtml += `<div class="user-label" style="background-color: var(--color-${leave.type}, #6a737d)" title="${leave.name}-${leave.type}">${escapeHtml(leave.name)}-${leave.type}</div>`;
+                });
+                labelsHtml += '</div>';
+
+                let dayClass = isToday ? "day today" : "day";
+                grid.innerHTML += `
+                    <div class="${dayClass}" data-date="${dateStr}" onclick="selectCalendarDate(this, '${dateStr}')">
+                        <span class="day-num">${d}</span>
+                        ${labelsHtml}
+                    </div>`;
+            }
+        }
+
+        function moveMonth(dir) {
+            currentMonth += dir;
+            if(currentMonth > 11) { currentMonth = 0; currentYear++; }
+            if(currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        }
+
+        function selectCalendarDate(element, dateStr) {
+            document.querySelectorAll('.calendar-grid .day').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById("leaveDate").value = dateStr;
+        }
+
+        function submitLeave() {
+            const token = localStorage.getItem("session_token");
+            const date = document.getElementById("leaveDate").value;
+            const type = document.getElementById("leaveType").value;
+            if (!date) return alert("請選擇請假日期");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "addLeave", token: token, date: date, type: type })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("請假送出成功！已同步更新行事曆與排序名單。");
+                    fetchLeaveRecords();
+                } else {
+                    alert("錯誤：" + data.message);
+                    if(data.message.includes("過期")) logout();
+                }
+            });
+        }
+
+        // 修改暱稱功能
+        function openNicknameModal() {
+            const currentName = localStorage.getItem("emp_name");
+            const newName = prompt("請輸入您想變更的新暱稱/真實姓名：", currentName);
+            if (newName === null) return; // 取消
+            if (!newName.trim()) return alert("暱稱不能為空");
+
+            const token = localStorage.getItem("session_token");
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "updateNickname", token: token, newName: newName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("暱稱修改成功！");
+                    localStorage.setItem("emp_name", data.newName);
+                    document.getElementById("userName").innerText = data.newName;
+                    fetchLeaveRecords(); // 刷新重新渲染行事曆上的名字
+                } else {
+                    alert("修改失敗：" + data.message);
+                }
+            });
+        }
+
+        function changePassword() {
+            const account = document.getElementById("chgAcc").value;
+            const oldPassword = document.getElementById("chgOldPwd").value;
+            const newPassword = document.getElementById("chgNewPwd").value;
+            if(!account || !oldPassword || !newPassword) return alert("請填寫所有欄位");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "changePassword", account: account, oldPassword: oldPassword, newPassword: newPassword })
+            })
+            .then(res => res.json())
+            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
+        }
+
+        function forgotPassword() {
+            const account = document.getElementById("forAcc").value;
+            const name = document.getElementById("forName").value;
+            if(!account || !name) return alert("請填寫所有欄位");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "forgotPassword", account: account, name: name })
+            })
+            .then(res => res.json())
+            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
+        }
+
+        function logout() {
+            localStorage.removeItem("session_token");
+            localStorage.removeItem("emp_name");
+            switchPanel("loginSection");
+            document.getElementById("acc").value = "";
+            document.getElementById("pwd").value = "";
+        }
+
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
+        }
+    </script>
+</body>
+</html>
