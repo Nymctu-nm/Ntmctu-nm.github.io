@@ -15,7 +15,7 @@
             --calendar-today: #dbeafe;
             --calendar-selected: #2563eb;
             
-            /* 🔥 鮮明高對比假別色彩系統 (飽和度調高，字體白色) */
+            /* 鮮明高對比假別色彩系統 */
             --color-事假: #ef4444;   /* 強烈紅 */
             --color-病假: #f59e0b;   /* 飽和橘黃 */
             --color-特休: #10b981;   /* 翠綠色 */
@@ -44,26 +44,40 @@
         .calendar-header button { width: auto; padding: 6px 14px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .calendar-header button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
         
-        /* 加大版精美高對比行事曆網格 */
+        /* 行事曆網格 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
         .weekday { font-weight: 700; color: #fff; background-color: var(--primary); padding: 10px 0; font-size: 14px; border-radius: 6px; }
+        
+        /* 本月日期基礎樣式 */
         .day { 
             min-height: 100px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; 
             cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: flex-start; 
             padding: 6px; box-sizing: border-box; transition: all 0.2s; 
         }
         .day:hover { background-color: #f8fafc; border-color: #94a3b8; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .day .day-num { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: var(--text-muted); background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+        .day .day-num { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: var(--text-main); background: #e2e8f0; padding: 2px 6px; border-radius: 4px; }
         
-        /* 週末特別對比底色 */
-        .calendar-grid div:nth-child(7n+1).day, .calendar-grid div:nth-child(7n).day { background-color: #fdf2f8; } /* 淡淡紅紫底 */
+        /* 🔥🔥🔥 核心修正：非本月（上個月、下個月）超強對比黑灰色斜線斑馬紋底色 */
+        .day.other-month { 
+            background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 10px, #f1f5f9 10px, #f1f5f9 20px) !important; 
+            border: 1px solid #cbd5e1 !important;
+            cursor: not-allowed !important;
+            opacity: 0.6 !important;
+            pointer-events: none; /* 停用點擊 */
+        }
+        /* 非本月的數字加上刪除線與淡化 */
+        .day.other-month .day-num { 
+            color: #94a3b8 !important; 
+            background: #f1f5f9 !important; 
+            text-decoration: line-through; 
+            font-weight: normal;
+        }
 
-        .day.today { background-color: var(--calendar-today) !important; border: 2px solid #3b82f6; }
-        .day.today .day-num { color: var(--calendar-selected); background: #fff; font-weight: bold; }
+        .day.today { background-color: var(--calendar-today) !important; border: 2px solid #3b82f6 !important; }
+        .day.today .day-num { color: var(--calendar-selected) !important; background: #fff !important; font-weight: bold; }
         .day.selected { border: 2px solid var(--calendar-selected) !important; background-color: #eff6ff !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
-        .day.other-month { background: #f1f5f9 !important; color: #94a3b8; opacity: 0.4; pointer-events: none; }
         
-        /* 🔥 行事曆上的強烈對比彩色人員標籤 */
+        /* 行事曆上的強烈對比彩色人員標籤 */
         .day-labels { width: 100%; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
         .user-label { 
             font-size: 12px; padding: 4px 6px; border-radius: 4px; color: #ffffff; 
@@ -94,12 +108,10 @@
 </head>
 <body>
 
-    <!-- ⚠️ 請更換成你的 GAS 後端連結 -->
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzneVEwKI-XpoLbsIzdDwb1pv4NfjpQfcZVFQJXZCr7rXbDyVqtZATkWgwu5F2rKyip/exec"; 
     </script>
 
-    <!-- ================= 1. 登入面板群 ================= -->
     <div id="loginSection" class="login-container">
         <h3>🔒 員工系統驗證</h3>
         <label>使用者帳號</label>
@@ -113,7 +125,6 @@
         </div>
     </div>
 
-    <!-- 修改密碼 -->
     <div id="changePwdSection" class="login-container hidden">
         <h3>🛠️ 修改帳戶密碼</h3>
         <input type="text" id="chgAcc" placeholder="請輸入您的帳號">
@@ -123,7 +134,6 @@
         <button class="btn-secondary" style="margin-top:10px;" onclick="switchPanel('loginSection')">返回登入</button>
     </div>
 
-    <!-- 忘記密碼 -->
     <div id="forgotPwdSection" class="login-container hidden">
         <h3>❓ 忘記密碼安全重設</h3>
         <input type="text" id="forAcc" placeholder="請輸入您的帳號">
@@ -133,7 +143,6 @@
     </div>
 
 
-    <!-- ================= 2. 主系統雙欄面板 ================= -->
     <div id="mainSystem" class="hidden">
         <div class="main-header">
             <h2>💼 內部同仁請假管理系統</h2>
@@ -145,7 +154,6 @@
         </div>
 
         <div class="dashboard">
-            <!-- 左側欄：加大行事曆 + 請假單 -->
             <div class="left-column">
                 <div class="card">
                     <div class="calendar-header">
@@ -156,8 +164,7 @@
                         </div>
                     </div>
                     <div class="calendar-grid" id="calendarGrid">
-                        <!-- 行事曆自動生成 -->
-                    </div>
+                        </div>
                 </div>
 
                 <div class="card">
@@ -175,13 +182,11 @@
                 </div>
             </div>
 
-            <!-- 右側欄：近期休假名單 -->
             <div class="right-column">
                 <div class="card" style="height: calc(100% - 50px); overflow-y: auto;">
                     <h3>📢 近期休假同仁 (依日期排序)</h3>
                     <div class="leave-list" id="leaveListContainer">
-                        <!-- 排序名單自動生成 -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -285,14 +290,17 @@
             const weeks = ['日', '一', '二', '三', '四', '五', '六'];
             weeks.forEach(w => grid.innerHTML += `<div class="weekday">${w}</div>`);
 
+            // 計算上個月需要補齊的天數
             const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
             const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
             const prevTotalDays = new Date(currentYear, currentMonth, 0).getDate();
 
+            // 上個月的格子
             for(let i = firstDayIndex - 1; i >= 0; i--) {
                 grid.innerHTML += `<div class="day other-month"><span class="day-num">${prevTotalDays - i}</span></div>`;
             }
 
+            // 本個月的格子
             const todayObj = new Date();
             for(let d = 1; d <= totalDays; d++) {
                 let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -312,6 +320,13 @@
                         ${labelsHtml}
                     </div>`;
             }
+
+            // 下個月需要補齊的格子 (讓行事曆維持完整的 6 週網格 42 格)
+            const currentGridCount = firstDayIndex + totalDays;
+            const nextMonthNeed = 42 - currentGridCount;
+            for(let n = 1; n <= nextMonthNeed; n++) {
+                grid.innerHTML += `<div class="day other-month"><span class="day-num">${n}</span></div>`;
+            }
         }
 
         function moveMonth(dir) {
@@ -327,98 +342,12 @@
             document.getElementById("leaveDate").value = dateStr;
         }
 
-        // 🔥 請假完畢自動清空、還原、初始化表單與行事曆選擇狀態
         function clearLeaveForm() {
-            document.getElementById("leaveDate").value = "";  // 清空日期欄位
-            document.getElementById("leaveType").selectedIndex = 0; // 還原假別選單至第一項
-            document.querySelectorAll('.calendar-grid .day').forEach(el => el.classList.remove('selected')); // 移除行事曆藍色點選框
+            document.getElementById("leaveDate").value = "";  
+            document.getElementById("leaveType").selectedIndex = 0; 
+            document.querySelectorAll('.calendar-grid .day').forEach(el => el.classList.remove('selected')); 
         }
 
         function submitLeave() {
             const token = localStorage.getItem("session_token");
-            const date = document.getElementById("leaveDate").value;
-            const type = document.getElementById("leaveType").value;
-            if (!date) return alert("請選擇請假日期");
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "addLeave", token: token, date: date, type: type })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("請假送出成功！已同步更新行事曆與排序名單。");
-                    clearLeaveForm(); // 🔥 呼叫初始化指令
-                    fetchLeaveRecords();
-                } else {
-                    alert("錯誤：" + data.message);
-                    if(data.message.includes("過期")) logout();
-                }
-            });
-        }
-
-        function openNicknameModal() {
-            const currentName = localStorage.getItem("emp_name");
-            const newName = prompt("請輸入您想變更的新暱稱/真實姓名：", currentName);
-            if (newName === null) return; 
-            if (!newName.trim()) return alert("暱稱不能為空");
-
-            const token = localStorage.getItem("session_token");
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "updateNickname", token: token, newName: newName })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    alert("暱稱修改成功！");
-                    localStorage.setItem("emp_name", data.newName);
-                    document.getElementById("userName").innerText = data.newName;
-                    fetchLeaveRecords(); 
-                } else {
-                    alert("修改失敗：" + data.message);
-                }
-            });
-        }
-
-        function changePassword() {
-            const account = document.getElementById("chgAcc").value;
-            const oldPassword = document.getElementById("chgOldPwd").value;
-            const newPassword = document.getElementById("chgNewPwd").value;
-            if(!account || !oldPassword || !newPassword) return alert("請填寫所有欄位");
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "changePassword", account: account, oldPassword: oldPassword, newPassword: newPassword })
-            })
-            .then(res => res.json())
-            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
-        }
-
-        function forgotPassword() {
-            const account = document.getElementById("forAcc").value;
-            const name = document.getElementById("forName").value;
-            if(!account || !name) return alert("請填寫所有欄位");
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "forgotPassword", account: account, name: name })
-            })
-            .then(res => res.json())
-            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
-        }
-
-        function logout() {
-            localStorage.removeItem("session_token");
-            localStorage.removeItem("emp_name");
-            switchPanel("loginSection");
-            document.getElementById("acc").value = "";
-            document.getElementById("pwd").value = "";
-        }
-
-        function escapeHtml(string) {
-            return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
-        }
-    </script>
-</body>
-</html>
+            const
