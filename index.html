@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企業排休與行事曆管理系統 (連續請假版)</title>
+    <title>企業排休與行事曆管理系統 (連續請假強固版)</title>
     <style>
         :root {
             --primary: #1e3a8a;
@@ -42,7 +42,7 @@
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
         .calendar-header h3 { color: var(--text-main) !important; border: none !important; padding: 0 !important; margin: 0 !important; font-weight: bold; }
         
-        /* 上個月、下個月按鈕：直接固定為深藍色底、白字，並徹底拔除 hover 變色效果 */
+        /* 【修改核心】上個月、下個月按鈕：直接固定為深藍色底、白字，且徹底拔除 hover 變色效果 */
         .calendar-header button { 
             width: auto; 
             padding: 6px 14px; 
@@ -307,7 +307,6 @@
 
             upcomingLeaves.forEach(item => {
                 let deleteBtnHtml = "";
-                // 強固型自動去空格比對，確保撤銷按鈕正常出現
                 if (item.name.trim() === currentLoggedInName.trim() && item.leaveId) {
                     deleteBtnHtml = `<button class="btn-delete-leave" onclick="deleteLeave('${item.leaveId}', '${item.date}')">取消請假</button>`;
                 }
@@ -372,7 +371,6 @@
             syncRangeUI(); 
         }
 
-        // 連續選取點擊邏輯
         function handleDateClick(dateStr) {
             if (!rangeStart || (rangeStart && rangeEnd)) {
                 rangeStart = dateStr;
@@ -392,7 +390,6 @@
             syncRangeUI();
         }
 
-        // 同步渲染連選區間的背景底色
         function syncRangeUI() {
             const sVal = document.getElementById("startDate").value;
             const eVal = document.getElementById("endDate").value;
@@ -440,22 +437,42 @@
             }); 
         }
 
+        // 【修改核心】由前端拆解日期字串陣列，徹底斷絕時區誤差導致的空白 Bug
         function submitLeave() {
             const token = localStorage.getItem("session_token");
-            const sDate = document.getElementById("startDate").value;
-            const eDate = document.getElementById("endDate").value;
+            const sDateStr = document.getElementById("startDate").value;
+            const eDateStr = document.getElementById("endDate").value;
             const type = document.getElementById("leaveType").value;
             const timeRange = document.getElementById("leaveTimeRange").value; 
             
-            if (!sDate) return alert("請選擇請假日期");
+            if (!sDateStr) return alert("請選擇請假日期");
+
+            const finalEDateStr = eDateStr || sDateStr;
+            
+            // 在前端利用本地端時間安全的計算出日期列表
+            let dateList = [];
+            let startObj = new Date(sDateStr + "T00:00:00");
+            let endObj = new Date(finalEDateStr + "T00:00:00");
+
+            if (startObj > endObj) {
+                return alert("格式錯誤：開始日期不能大於結束日期");
+            }
+
+            let loopDate = new Date(startObj);
+            while (loopDate <= endObj) {
+                let y = loopDate.getFullYear();
+                let m = String(loopDate.getMonth() + 1).padStart(2, '0');
+                let d = String(loopDate.getDate()).padStart(2, '0');
+                dateList.push(`${y}-${m}-${d}`); // 壓製成純文字的標準格式 "yyyy-MM-dd"
+                loopDate.setDate(loopDate.getDate() + 1);
+            }
 
             fetch(GAS_URL, {
                 method: "POST",
                 body: JSON.stringify({ 
                     action: "addLeave", 
                     token: token, 
-                    startDate: sDate, 
-                    endDate: eDate || sDate, 
+                    dateList: dateList, // 直接將字串陣列發送給後台
                     type: type, 
                     timeRange: timeRange 
                 })
@@ -463,14 +480,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("連續假單送出成功！後端已自動完成分拆與同步。");
+                    alert("連續假單送出成功！試算表已同步寫入每日紀錄。");
                     clearLeaveForm(); 
                     fetchLeaveRecords();
                 } else {
                     alert("錯誤：" + data.message);
                     if(data.message.includes("過期")) logout();
                 }
-            });
+            }).catch(() => alert("發送失敗，請確認後端部署 URL 正常運作中"));
         }
 
         function deleteLeave(leaveId, dateStr) {
