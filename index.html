@@ -6,20 +6,20 @@
     <title>高階企業排休與行事曆管理系統</title>
     <style>
         :root {
-            --primary: #0366d6;
-            --primary-hover: #0255b3;
-            --bg-main: #f6f8fa;
-            --border-color: #e1e4e8;
-            --text-main: #24292e;
-            --text-muted: #586069;
-            --calendar-today: #e8f0fe;
-            --calendar-selected: #1a73e8;
+            --primary: #1e3a8a;
+            --primary-hover: #1e40af;
+            --bg-main: #f1f5f9;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --calendar-today: #dbeafe;
+            --calendar-selected: #2563eb;
             
-            /* 假別色彩系統 */
-            --color-事假: #ff9800;
-            --color-病假: #e91e63;
-            --color-特休: #4caf50;
-            --color-婚喪假: #9c27b0;
+            /* 🔥 鮮明高對比假別色彩系統 (飽和度調高，字體白色) */
+            --color-事假: #ef4444;   /* 強烈紅 */
+            --color-病假: #f59e0b;   /* 飽和橘黃 */
+            --color-特休: #10b981;   /* 翠綠色 */
+            --color-婚喪假: #8b5cf6; /* 亮紫色 */
         }
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; color: var(--text-main); background-color: var(--bg-main); }
@@ -30,67 +30,76 @@
         .login-container h3 { margin-top: 0; margin-bottom: 20px; font-size: 22px; text-align: center; }
         
         /* 主系統排版 */
-        .main-header { background: #fff; padding: 15px 30px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .main-header h2 { margin: 0; font-size: 20px; }
+        .main-header { background: #fff; padding: 15px 30px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .main-header h2 { margin: 0; font-size: 20px; color: var(--primary); }
         .dashboard { display: flex; max-width: 1400px; margin: 25px auto; padding: 0 20px; gap: 25px; }
         .left-column { flex: 2.3; display: flex; flex-direction: column; gap: 25px; min-width: 750px; }
         .right-column { flex: 1; min-width: 320px; }
-        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .card h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid var(--bg-main); padding-bottom: 10px; }
+        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .card h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid var(--bg-main); padding-bottom: 10px; color: var(--primary); }
 
         /* 行事曆控制面板 */
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .calendar-header button { width: auto; padding: 6px 14px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; }
-        .calendar-header button:hover { background: var(--bg-main); }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .calendar-header h3 { color: var(--text-main) !important; border: none !important; padding: 0 !important; margin: 0 !important; font-weight: bold; }
+        .calendar-header button { width: auto; padding: 6px 14px; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .calendar-header button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
         
-        /* 加大版精美行事曆網格 */
+        /* 加大版精美高對比行事曆網格 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
-        .weekday { font-weight: 600; color: var(--text-muted); padding: 8px 0; font-size: 14px; }
+        .weekday { font-weight: 700; color: #fff; background-color: var(--primary); padding: 10px 0; font-size: 14px; border-radius: 6px; }
         .day { 
-            min-height: 85px; background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; 
+            min-height: 100px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; 
             cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: flex-start; 
             padding: 6px; box-sizing: border-box; transition: all 0.2s; 
         }
-        .day:hover { background-color: var(--bg-main); border-color: #d1d5da; }
-        .day .day-num { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: var(--text-muted); }
-        .day.today { background-color: var(--calendar-today); }
-        .day.today .day-num { color: var(--calendar-selected); font-weight: bold; }
-        .day.selected { border: 2px solid var(--calendar-selected) !important; }
-        .day.other-month { background: #fafafa; color: #ccc; opacity: 0.5; pointer-events: none; }
+        .day:hover { background-color: #f8fafc; border-color: #94a3b8; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .day .day-num { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: var(--text-muted); background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
         
-        /* 行事曆上的彩色人員標籤 */
-        .day-labels { width: 100%; display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+        /* 週末特別對比底色 */
+        .calendar-grid div:nth-child(7n+1).day, .calendar-grid div:nth-child(7n).day { background-color: #fdf2f8; } /* 淡淡紅紫底 */
+
+        .day.today { background-color: var(--calendar-today) !important; border: 2px solid #3b82f6; }
+        .day.today .day-num { color: var(--calendar-selected); background: #fff; font-weight: bold; }
+        .day.selected { border: 2px solid var(--calendar-selected) !important; background-color: #eff6ff !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.2); }
+        .day.other-month { background: #f1f5f9 !important; color: #94a3b8; opacity: 0.4; pointer-events: none; }
+        
+        /* 🔥 行事曆上的強烈對比彩色人員標籤 */
+        .day-labels { width: 100%; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
         .user-label { 
-            font-size: 11px; padding: 2px 5px; border-radius: 4px; color: #fff; 
+            font-size: 12px; padding: 4px 6px; border-radius: 4px; color: #ffffff; 
             text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-            font-weight: 500; line-height: 1.2;
+            font-weight: 700; line-height: 1.2; box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
         }
 
         /* 右側近期休假名單 */
         .leave-list { display: flex; flex-direction: column; gap: 12px; }
-        .leave-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--bg-main); border-radius: 8px; border-left: 4px solid var(--primary); }
-        .leave-item .name { font-weight: bold; }
-        .leave-item .date { font-size: 13px; color: var(--text-muted); }
-        .leave-item .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; color: #fff; font-weight: 600; }
+        .leave-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .leave-item .name { font-weight: 800; font-size: 15px; }
+        .leave-item .date { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .leave-item .tag { font-size: 12px; padding: 4px 10px; border-radius: 6px; color: #fff; font-weight: 700; text-shadow: 1px 1px 1px rgba(0,0,0,0.1); }
 
         /* 表單通用元件 */
-        input, select { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        button { background-color: var(--primary); color: white; border: none; padding: 11px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #f8fafc; color: var(--text-main); font-weight: 500; }
+        input:focus, select:focus { border-color: var(--calendar-selected); outline: none; background-color: #fff; }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background 0.2s; }
         button:hover { background-color: var(--primary-hover); }
-        .btn-link { background: none; color: var(--primary); border: none; padding: 0; margin: 5px 0; width: auto; font-weight: normal; cursor: pointer; text-decoration: underline; font-size: 13px; }
-        .btn-danger { background-color: #d73a49; width: auto; padding: 8px 15px; }
-        .btn-danger:hover { background-color: #cb2431; }
-        .btn-secondary { background-color: #6a737d; }
-        .btn-secondary:hover { background-color: #586069; }
+        .btn-link { background: none; color: var(--calendar-selected); border: none; padding: 0; margin: 5px 0; width: auto; font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 13px; box-shadow: none; }
+        .btn-danger { background-color: #ef4444; width: auto; padding: 8px 15px; box-shadow: none; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-secondary { background-color: #475569; box-shadow: none; }
+        .btn-secondary:hover { background-color: #334155; }
         .nav-links { text-align: center; margin-top: 15px; }
     </style>
 </head>
 <body>
 
+    <!-- ⚠️ 請更換成你的 GAS 後端連結 -->
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzneVEwKI-XpoLbsIzdDwb1pv4NfjpQfcZVFQJXZCr7rXbDyVqtZATkWgwu5F2rKyip/exec"; 
     </script>
 
+    <!-- ================= 1. 登入面板群 ================= -->
     <div id="loginSection" class="login-container">
         <h3>🔒 員工系統驗證</h3>
         <label>使用者帳號</label>
@@ -104,6 +113,7 @@
         </div>
     </div>
 
+    <!-- 修改密碼 -->
     <div id="changePwdSection" class="login-container hidden">
         <h3>🛠️ 修改帳戶密碼</h3>
         <input type="text" id="chgAcc" placeholder="請輸入您的帳號">
@@ -113,6 +123,7 @@
         <button class="btn-secondary" style="margin-top:10px;" onclick="switchPanel('loginSection')">返回登入</button>
     </div>
 
+    <!-- 忘記密碼 -->
     <div id="forgotPwdSection" class="login-container hidden">
         <h3>❓ 忘記密碼安全重設</h3>
         <input type="text" id="forAcc" placeholder="請輸入您的帳號">
@@ -122,28 +133,31 @@
     </div>
 
 
+    <!-- ================= 2. 主系統雙欄面板 ================= -->
     <div id="mainSystem" class="hidden">
         <div class="main-header">
             <h2>💼 內部同仁請假管理系統</h2>
             <div>
-                <span style="margin-right: 15px; font-size:14px;">歡迎，<b id="userName" style="color:var(--primary);"></b></span>
+                <span style="margin-right: 15px; font-size:14px;">歡迎，<b id="userName" style="color:var(--calendar-selected);"></b></span>
                 <button class="btn-secondary" style="width:auto; padding:6px 12px; font-size:13px; margin-right:5px;" onclick="openNicknameModal()">修改暱稱</button>
                 <button class="btn-danger" onclick="logout()">安全登出</button>
             </div>
         </div>
 
         <div class="dashboard">
+            <!-- 左側欄：加大行事曆 + 請假單 -->
             <div class="left-column">
                 <div class="card">
                     <div class="calendar-header">
-                        <h3 id="calendarTitle" style="margin:0; border:none; padding:0;">2026 年 6 月</h3>
+                        <h3 id="calendarTitle">2026 年 6 月</h3>
                         <div>
                             <button onclick="moveMonth(-1)">◀ 上個月</button>
                             <button onclick="moveMonth(1)">下個月 ▶</button>
                         </div>
                     </div>
                     <div class="calendar-grid" id="calendarGrid">
-                        </div>
+                        <!-- 行事曆自動生成 -->
+                    </div>
                 </div>
 
                 <div class="card">
@@ -152,20 +166,22 @@
                     <input type="date" id="leaveDate">
                     <label>申請假別</label>
                     <select id="leaveType">
-                        <option value="事假">事假</option>
-                        <option value="病假">病假</option>
-                        <option value="特休">特休</option>
-                        <option value="婚喪假">婚喪假</option>
+                        <option value="事假">事假 (紅色)</option>
+                        <option value="病假">病假 (橘黃)</option>
+                        <option value="特休">特休 (翠綠)</option>
+                        <option value="婚喪假">婚喪假 (紫色)</option>
                     </select>
                     <button onclick="submitLeave()">確認送出請假單</button>
                 </div>
             </div>
 
+            <!-- 右側欄：近期休假名單 -->
             <div class="right-column">
                 <div class="card" style="height: calc(100% - 50px); overflow-y: auto;">
                     <h3>📢 近期休假同仁 (依日期排序)</h3>
                     <div class="leave-list" id="leaveListContainer">
-                        </div>
+                        <!-- 排序名單自動生成 -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -232,7 +248,6 @@
             });
         }
 
-        // 【右欄：近期休假名單自動排序】
         function renderRightSortedList() {
             const container = document.getElementById("leaveListContainer");
             container.innerHTML = "";
@@ -249,7 +264,7 @@
 
             upcomingLeaves.forEach(item => {
                 let cardHtml = `
-                    <div class="leave-item">
+                    <div class="leave-item" style="border-left: 5px solid var(--color-${item.type}, #6a737d)">
                         <div>
                             <div class="name">${escapeHtml(item.name)}</div>
                             <div class="date">📅 ${escapeHtml(item.date)}</div>
@@ -260,7 +275,6 @@
             });
         }
 
-        // 【左欄：精美加大行事曆，直接印出人員彩色名稱】
         function renderCalendar() {
             const grid = document.getElementById("calendarGrid");
             const title = document.getElementById("calendarTitle");
@@ -284,7 +298,6 @@
                 let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 let isToday = (todayObj.getFullYear()===currentYear && todayObj.getMonth()===currentMonth && todayObj.getDate()===d);
                 
-                // 找出當天所有請假的人
                 let dayLeaves = globalLeaveRecords.filter(r => r.date === dateStr);
                 let labelsHtml = '<div class="day-labels">';
                 dayLeaves.forEach(leave => {
@@ -314,6 +327,13 @@
             document.getElementById("leaveDate").value = dateStr;
         }
 
+        // 🔥 請假完畢自動清空、還原、初始化表單與行事曆選擇狀態
+        function clearLeaveForm() {
+            document.getElementById("leaveDate").value = "";  // 清空日期欄位
+            document.getElementById("leaveType").selectedIndex = 0; // 還原假別選單至第一項
+            document.querySelectorAll('.calendar-grid .day').forEach(el => el.classList.remove('selected')); // 移除行事曆藍色點選框
+        }
+
         function submitLeave() {
             const token = localStorage.getItem("session_token");
             const date = document.getElementById("leaveDate").value;
@@ -328,6 +348,7 @@
             .then(data => {
                 if (data.success) {
                     alert("請假送出成功！已同步更新行事曆與排序名單。");
+                    clearLeaveForm(); // 🔥 呼叫初始化指令
                     fetchLeaveRecords();
                 } else {
                     alert("錯誤：" + data.message);
@@ -336,11 +357,10 @@
             });
         }
 
-        // 修改暱稱功能
         function openNicknameModal() {
             const currentName = localStorage.getItem("emp_name");
             const newName = prompt("請輸入您想變更的新暱稱/真實姓名：", currentName);
-            if (newName === null) return; // 取消
+            if (newName === null) return; 
             if (!newName.trim()) return alert("暱稱不能為空");
 
             const token = localStorage.getItem("session_token");
@@ -354,7 +374,7 @@
                     alert("暱稱修改成功！");
                     localStorage.setItem("emp_name", data.newName);
                     document.getElementById("userName").innerText = data.newName;
-                    fetchLeaveRecords(); // 刷新重新渲染行事曆上的名字
+                    fetchLeaveRecords(); 
                 } else {
                     alert("修改失敗：" + data.message);
                 }
