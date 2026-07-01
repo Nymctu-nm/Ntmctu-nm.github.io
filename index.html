@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企業排休與行事曆管理系統 (連續請假強固分頁版)</title>
+    <title>企業排休與行事曆管理系統 (時間範圍篩選強固版)</title>
     <style>
         :root {
             --primary: #1e3a8a;
@@ -206,7 +206,7 @@
                             <input type="date" id="startDate" onchange="syncRangeUI()">
                         </div>
                         <div style="flex:1;">
-                            <label>請假結束日期</label>
+                            <label>請假結束日期 (單天請假同開始日期)</label>
                             <input type="date" id="endDate" onchange="syncRangeUI()">
                         </div>
                         <div style="flex:1;">
@@ -234,7 +234,17 @@
 
             <div class="right-column">
                 <div class="card right-card">
-                    <h3>📢 近期休假同仁 & 撤銷功能</h3>
+                    <h3>📢 休假同仁查詢 & 撤銷</h3>
+                    
+                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 13px;">
+                        <div style="font-weight: bold; margin-bottom: 6px; color: var(--primary);">🗓️ 篩選休假區間：</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="date" id="filterStartDate" style="margin: 0; padding: 6px; font-size: 13px;" onchange="handleFilterDateChange()">
+                            <span style="color: var(--text-muted);">至</span>
+                            <input type="date" id="filterEndDate" style="margin: 0; padding: 6px; font-size: 13px;" onchange="handleFilterDateChange()">
+                        </div>
+                    </div>
+
                     <div class="leave-list" id="leaveListContainer"></div>
                     
                     <div class="pagination-container" id="paginationContainer">
@@ -260,13 +270,22 @@
         // 分頁控制全域變數
         let currentPage = 1;
         const pageSize = 6;              // 每頁顯示的假單筆數
-        let filteredUpcomingLeaves = []; // 儲存篩選後的近期休假同仁陣列
+        let filteredUpcomingLeaves = []; // 儲存篩選後的休假同仁陣列
 
         // 初始化系統
         window.onload = function() {
             const today = new Date();
             currentYear = today.getFullYear();
             currentMonth = today.getMonth();
+
+            // 🎯 計算今天與 14 天後的標準日期字串，並填入篩選框
+            const todayStr = formatToStandardDateStr(today);
+            const twoWeeksLater = new Date();
+            twoWeeksLater.setDate(today.getDate() + 14);
+            const twoWeeksLaterStr = formatToStandardDateStr(twoWeeksLater);
+
+            document.getElementById("filterStartDate").value = todayStr;
+            document.getElementById("filterEndDate").value = twoWeeksLaterStr;
 
             const savedToken = localStorage.getItem("session_token");
             const savedName = localStorage.getItem("emp_name");
@@ -315,7 +334,7 @@
             }).catch(() => alert("連線後端 API 異常"));
         }
 
-        // 輔助函式：將各種奇怪的日期格式統一壓縮成標準 yyyy-MM-dd 字串
+        // 輔助函式：將各種日期格式統一壓縮成標準 yyyy-MM-dd 字串
         function formatToStandardDateStr(rawDate) {
             if (!rawDate) return "";
             try {
@@ -347,17 +366,27 @@
                     return item;
                 });
                 
-                // 資料載入時，初始化篩選後的近期資料，並將頁碼重設回第一頁
-                const todayStr = formatToStandardDateStr(new Date());
-                filteredUpcomingLeaves = globalLeaveRecords
-                    .filter(item => item.date >= todayStr)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-                
-                currentPage = 1;
-
-                renderRightSortedList();
+                // 🎯 每次後端刷新時，直接呼叫連動篩選器處理時間範圍過濾
+                handleFilterDateChange();
                 renderCalendar();
             });
+        }
+
+        // 🎯 時間選擇器日期變更監聽函式
+        function handleFilterDateChange() {
+            const sFilter = document.getElementById("filterStartDate").value;
+            const eFilter = document.getElementById("filterEndDate").value;
+
+            if (!sFilter || !eFilter) return;
+
+            // 根據畫面上自訂的時間區間，動態過濾全域資料
+            filteredUpcomingLeaves = globalLeaveRecords
+                .filter(item => item.date >= sFilter && item.date <= eFilter)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 重置到第一頁並刷新右側面板
+            currentPage = 1;
+            renderRightSortedList();
         }
 
         // 具備分頁渲染機制的右側清單
@@ -367,7 +396,7 @@
             container.innerHTML = "";
 
             if(filteredUpcomingLeaves.length === 0) {
-                container.innerHTML = `<div style="text-align:center;color:var(--text-muted);margin-top:20px;">近期尚無同仁排休</div>`;
+                container.innerHTML = `<div style="text-align:center;color:var(--text-muted);margin-top:20px;">此時間區間內尚無同仁排休</div>`;
                 pagContainer.style.display = "none"; 
                 return;
             }
