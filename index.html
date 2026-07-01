@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企業排休與行事曆管理系統 (連續請假強固版)</title>
+    <title>企業排休與行事曆管理系統 (連續請假強固分頁版)</title>
     <style>
         :root {
             --primary: #1e3a8a;
@@ -14,7 +14,7 @@
             --text-muted: #475569;
             --calendar-today: #dbeafe;
             --calendar-selected: #2563eb;
-            --calendar-range: #eff6ff; /* 連續假期的範圍底色 */
+            --calendar-range: #eff6ff; 
             
             --color-事假: #ef4444;   
             --color-病假: #f59e0b;   
@@ -22,7 +22,17 @@
             --color-婚喪假: #8b5cf6; 
         }
 
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; color: var(--text-main); background-color: var(--bg-main); }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            color: var(--text-main); 
+            background-color: var(--bg-main); 
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* 防止整頁出現外滾動條，確保滿版結構 */
+        }
         .hidden { display: none !important; }
         
         /* 登入牆 */
@@ -30,13 +40,22 @@
         .login-container h3 { margin-top: 0; margin-bottom: 20px; font-size: 22px; text-align: center; }
         
         /* 主系統排版 */
-        .main-header { background: #fff; padding: 15px 30px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .main-header { background: #fff; padding: 15px 30px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); flex-shrink: 0; }
         .main-header h2 { margin: 0; font-size: 20px; color: var(--primary); }
-        .dashboard { display: flex; max-width: 1400px; margin: 25px auto; padding: 0 20px; gap: 25px; }
-        .left-column { flex: 2.3; display: flex; flex-direction: column; gap: 25px; min-width: 750px; }
-        .right-column { flex: 1; min-width: 350px; }
-        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        /* 強固高寬配置：滿版且內部自適應滾動 */
+        #mainSystem { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .dashboard { display: flex; max-width: 1400px; width: 100%; margin: 0 auto; padding: 20px; gap: 25px; box-sizing: border-box; flex: 1; overflow: hidden; }
+        
+        .left-column { flex: 2.3; display: flex; flex-direction: column; gap: 20px; min-width: 750px; overflow-y: auto; padding-right: 5px; }
+        .right-column { flex: 1; min-width: 380px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        
+        .card { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); box-sizing: border-box; }
         .card h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid var(--bg-main); padding-bottom: 10px; color: var(--primary); }
+        
+        /* 右側面板特殊佈局：確保分頁元件永遠在卡片最下方 */
+        .right-card { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .right-card h3 { flex-shrink: 0; }
 
         /* 行事曆控制面板 */
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
@@ -46,16 +65,15 @@
             width: auto; 
             padding: 6px 14px; 
             background-color: var(--primary) !important; 
-            color: #ffffff !important;                    
+            color: #ffffff !important;                     
             border: 1px solid var(--primary) !important;  
             border-radius: 6px; 
             cursor: pointer; 
             font-weight: 600; 
         }
         .calendar-header button:hover { 
-            background-color: var(--primary) !important; 
-            color: #ffffff !important;
-            border-color: var(--primary) !important;
+            background-color: var(--primary-hover) !important; 
+            border-color: var(--primary-hover) !important;
         }
         
         /* 行事曆網格 */
@@ -93,16 +111,23 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.15); text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
         }
 
-        /* 右側看板 */
-        .leave-list { display: flex; flex-direction: column; gap: 12px; }
-        .leave-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
-        .leave-item .info-box { flex: 1; }
-        .leave-item .name { font-weight: 800; font-size: 15px; }
+        /* 右側看板與自適應內部滾動 */
+        .leave-list { display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; padding-right: 5px; margin-bottom: 15px; }
+        .leave-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 2px rgba(0,0,0,0.02); flex-shrink: 0; }
+        .leave-item .info-box { flex: 1; min-width: 0; }
+        .leave-item .name { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .leave-item .date { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-        .leave-item .tag { font-size: 11px; padding: 4px 8px; border-radius: 6px; color: #fff; font-weight: 700; margin-right: 8px; text-shadow: 1px 1px 1px rgba(0,0,0,0.1); }
+        .leave-item .tag { font-size: 11px; padding: 4px 8px; border-radius: 6px; color: #fff; font-weight: 700; margin-right: 8px; text-shadow: 1px 1px 1px rgba(0,0,0,0.1); flex-shrink: 0; }
         
-        .btn-delete-leave { background-color: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 5px 10px; border-radius: 6px; font-size: 12px; width: auto; font-weight: bold; box-shadow: none; cursor: pointer; transition: all 0.2s; }
+        .btn-delete-leave { background-color: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 5px 10px; border-radius: 6px; font-size: 12px; width: auto; font-weight: bold; box-shadow: none; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
         .btn-delete-leave:hover { background-color: #ef4444; color: #ffffff; }
+
+        /* 分頁控制元件樣式 */
+        .pagination-container { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 10px 0 5px 0; border-top: 1px solid var(--bg-main); flex-shrink: 0; }
+        .pagination-btn { width: auto; padding: 6px 12px; font-size: 13px; background-color: #fff; color: var(--text-muted); border: 1px solid var(--border-color); box-shadow: none; }
+        .pagination-btn:hover:not(:disabled) { background-color: var(--bg-main); color: var(--text-main); }
+        .pagination-btn:disabled { background-color: #e2e8f0; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed; }
+        .pagination-info { font-size: 13px; font-weight: 600; color: var(--text-muted); min-width: 60px; text-align: center; }
 
         /* 通用表單 */
         input, select { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #f8fafc; color: var(--text-main); font-weight: 500; }
@@ -118,10 +143,6 @@
     </style>
 </head>
 <body>
-
-    <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzneVEwKI-XpoLbsIzdDwb1pv4NfjpQfcZVFQJXZCr7rXbDyVqtZATkWgwu5F2rKyip/exec"; 
-    </script>
 
     <div id="loginSection" class="login-container">
         <h3>🔒 員工系統驗證</h3>
@@ -153,7 +174,6 @@
         <button class="btn-secondary" style="margin-top:10px;" onclick="switchPanel('loginSection')">返回登入</button>
     </div>
 
-
     <div id="mainSystem" class="hidden">
         <div class="main-header">
             <h2>💼 內部同仁請假管理系統</h2>
@@ -175,8 +195,7 @@
                             <button onclick="moveMonth(1)">下個月 ▶</button>
                         </div>
                     </div>
-                    <div class="calendar-grid" id="calendarGrid">
-                        </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
                 </div>
 
                 <div class="card">
@@ -214,391 +233,20 @@
             </div>
 
             <div class="right-column">
-                <div class="card" style="height: calc(100% - 50px); overflow-y: auto;">
+                <div class="card right-card">
                     <h3>📢 近期休假同仁 & 撤銷功能</h3>
-                    <div class="leave-list" id="leaveListContainer">
-                        </div>
+                    <div class="leave-list" id="leaveListContainer"></div>
+                    
+                    <div class="pagination-container" id="paginationContainer">
+                        <button class="pagination-btn" id="prevPageBtn" onclick="changePage(-1)">上一頁</button>
+                        <span class="pagination-info" id="pageInfo">1 / 1</span>
+                        <button class="pagination-btn" id="nextPageBtn" onclick="changePage(1)">下一頁</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        let currentYear, currentMonth;
-        let globalLeaveRecords = [];
-        let currentLoggedInName = "";
-        
-        let rangeStart = null;
-        let rangeEnd = null;
-
-        window.onload = function() {
-            const today = new Date();
-            currentYear = today.getFullYear();
-            currentMonth = today.getMonth();
-
-            const savedToken = localStorage.getItem("session_token");
-            const savedName = localStorage.getItem("emp_name");
-            if (savedToken && savedName) {
-                currentLoggedInName = savedName.trim();
-                unlockSystem(savedName.trim());
-            }
-        };
-
-        function switchPanel(panelId) {
-            document.getElementById("loginSection").classList.add("hidden");
-            document.getElementById("changePwdSection").classList.add("hidden");
-            document.getElementById("forgotPwdSection").classList.add("hidden");
-            document.getElementById("mainSystem").classList.add("hidden");
-            document.getElementById(panelId).classList.remove("hidden");
-        }
-
-        function unlockSystem(name) {
-            currentLoggedInName = name;
-            document.getElementById("userName").innerText = name;
-            switchPanel("mainSystem");
-            fetchLeaveRecords(); 
-        }
-
-        function login() {
-            const account = document.getElementById("acc").value;
-            const password = document.getElementById("pwd").value;
-            if(!account || !password) return alert("請輸入帳密");
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "login", account: account, password: password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem("session_token", data.token);
-                    localStorage.setItem("emp_name", data.name.trim());
-                    unlockSystem(data.name.trim());
-                } else {
-                    alert("登入失敗：" + data.message);
-                }
-            }).catch(() => alert("連線後端 API 異常"));
-        }
-
-        // 輔助函式：將各種奇怪的日期格式統一壓縮成標準 yyyy-MM-dd 字串
-        function formatToStandardDateStr(rawDate) {
-            if (!rawDate) return "";
-            try {
-                let dObj = new Date(rawDate);
-                // 處理可能因斜線或空格造成的失效物件
-                if (isNaN(dObj.getTime())) {
-                    dObj = new Date(String(rawDate).trim().replace(/\//g, '-'));
-                }
-                if (isNaN(dObj.getTime())) {
-                    return String(rawDate).trim();
-                }
-                let y = dObj.getFullYear();
-                let m = String(dObj.getMonth() + 1).padStart(2, '0');
-                let d = String(dObj.getDate()).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            } catch (e) {
-                return String(rawDate).trim();
-            }
-        }
-
-        function fetchLeaveRecords() {
-            fetch(GAS_URL)
-            .then(res => res.json())
-            .then(data => {
-                // 將所有抓到的紀錄在前端先進行日期格式標準化清洗
-                globalLeaveRecords = data.map(item => {
-                    if (item.date) {
-                        item.date = formatToStandardDateStr(item.date);
-                    }
-                    return item;
-                });
-                renderRightSortedList();
-                renderCalendar();
-            });
-        }
-
-        function renderRightSortedList() {
-            const container = document.getElementById("leaveListContainer");
-            container.innerHTML = "";
-            const todayStr = formatToStandardDateStr(new Date());
-
-            let upcomingLeaves = globalLeaveRecords
-                .filter(item => item.date >= todayStr)
-                .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            if(upcomingLeaves.length === 0) {
-                container.innerHTML = `<div style="text-align:center;color:var(--text-muted);margin-top:20px;">近期尚無同仁排休</div>`;
-                return;
-            }
-
-            upcomingLeaves.forEach(item => {
-                let deleteBtnHtml = "";
-                if (item.name.trim() === currentLoggedInName.trim() && item.leaveId) {
-                    deleteBtnHtml = `<button class="btn-delete-leave" onclick="deleteLeave('${item.leaveId}', '${item.date}')">取消請假</button>`;
-                }
-
-                let cardHtml = `
-                    <div class="leave-item" style="border-left: 5px solid var(--color-${item.type}, #6a737d)">
-                        <div class="info-box">
-                            <div class="name">${escapeHtml(item.name)} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(${escapeHtml(item.timeRange)})</span></div>
-                            <div class="date">📅 ${escapeHtml(item.date)}</div>
-                        </div>
-                        <span class="tag" style="background-color: var(--color-${item.type}, #6a737d)">${escapeHtml(item.type)}</span>
-                        ${deleteBtnHtml}
-                    </div>`;
-                container.innerHTML += cardHtml;
-            });
-        }
-
-        function renderCalendar() {
-            const grid = document.getElementById("calendarGrid");
-            const title = document.getElementById("calendarTitle");
-            grid.innerHTML = "";
-
-            title.innerText = `${currentYear} 年 ${currentMonth + 1} 月`;
-
-            const weeks = ['日', '一', '二', '三', '四', '五', '六'];
-            weeks.forEach(w => grid.innerHTML += `<div class="weekday">${w}</div>`);
-
-            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const prevTotalDays = new Date(currentYear, currentMonth, 0).getDate();
-
-            for(let i = firstDayIndex - 1; i >= 0; i--) {
-                grid.innerHTML += `<div class="day other-month"><span class="day-num">${prevTotalDays - i}</span></div>`;
-            }
-
-            const todayObj = new Date();
-            for(let d = 1; d <= totalDays; d++) {
-                let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                let isToday = (todayObj.getFullYear()===currentYear && todayObj.getMonth()===currentMonth && todayObj.getDate()===d);
-                
-                // 這裡經過清洗後，r.date 與 dateStr 皆為精準的 "yyyy-MM-dd"
-                let dayLeaves = globalLeaveRecords.filter(r => r.date === dateStr);
-                let labelsHtml = '<div class="day-labels">';
-                dayLeaves.forEach(leave => {
-                    // 已修復：動態套用對應的假別色彩變數 --color-事假, --color-特休 等
-                    labelsHtml += `<div class="user-label" style="background-color: var(--color-${leave.type}, #6a737d)" title="${leave.name}-${leave.type}(${leave.timeRange})">${escapeHtml(leave.name)}-${leave.type}(${escapeHtml(leave.timeRange)})</div>`;
-                });
-                labelsHtml += '</div>';
-
-                let dayClass = isToday ? "day today" : "day";
-                grid.innerHTML += `
-                    <div class="${dayClass}" id="cell-${dateStr}" data-date="${dateStr}" onclick="handleDateClick('${dateStr}')">
-                        <span class="day-num">${d}</span>
-                        ${labelsHtml}
-                    </div>`;
-            }
-
-            const currentGridCount = firstDayIndex + totalDays;
-            const nextMonthNeed = 42 - currentGridCount;
-            for(let n = 1; n <= nextMonthNeed; n++) {
-                grid.innerHTML += `<div class="day other-month"><span class="day-num">${n}</span></div>`;
-            }
-
-            syncRangeUI(); 
-        }
-
-        function handleDateClick(dateStr) {
-            if (!rangeStart || (rangeStart && rangeEnd)) {
-                rangeStart = dateStr;
-                rangeEnd = null;
-                document.getElementById("startDate").value = dateStr;
-                document.getElementById("endDate").value = dateStr; 
-            } else if (rangeStart && !rangeEnd) {
-                if (new Date(dateStr) < new Date(rangeStart)) {
-                    rangeStart = dateStr;
-                    document.getElementById("startDate").value = dateStr;
-                    document.getElementById("endDate").value = dateStr;
-                } else {
-                    rangeEnd = dateStr;
-                    document.getElementById("endDate").value = dateStr;
-                }
-            }
-            syncRangeUI();
-        }
-
-        function syncRangeUI() {
-            const sVal = document.getElementById("startDate").value;
-            const eVal = document.getElementById("endDate").value;
-            
-            document.querySelectorAll('.calendar-grid .day').forEach(el => {
-                el.classList.remove('selected-endpoint', 'selected-range');
-            });
-
-            if (!sVal) return;
-
-            rangeStart = sVal;
-            rangeEnd = eVal || sVal;
-
-            let sDate = new Date(rangeStart);
-            let eDate = new Date(rangeEnd);
-
-            document.querySelectorAll('.calendar-grid .day[data-date]').forEach(el => {
-                let cellDateStr = el.getAttribute('data-date');
-                let cellDate = new Date(cellDateStr);
-
-                if (cellDateStr === rangeStart || cellDateStr === rangeEnd) {
-                    el.classList.add('selected-endpoint'); 
-                } else if (cellDate > sDate && cellDate < eDate) {
-                    el.classList.add('selected-range');    
-                }
-            });
-        }
-
-        function moveMonth(dir) {
-            currentMonth += dir;
-            if(currentMonth > 11) { currentMonth = 0; currentYear++; }
-            if(currentMonth < 0) { currentMonth = 11; currentYear--; }
-            renderCalendar();
-        }
-
-        function clearLeaveForm() {
-            document.getElementById("startDate").value = "";  
-            document.getElementById("endDate").value = "";  
-            document.getElementById("leaveType").selectedIndex = 0; 
-            document.getElementById("leaveTimeRange").selectedIndex = 0; 
-            rangeStart = null;
-            rangeEnd = null;
-            document.querySelectorAll('.calendar-grid .day').forEach(el => {
-                el.classList.remove('selected-endpoint', 'selected-range');
-            }); 
-        }
-
-        function submitLeave() {
-            const token = localStorage.getItem("session_token");
-            const sDateStr = document.getElementById("startDate").value;
-            const eDateStr = document.getElementById("endDate").value;
-            const type = document.getElementById("leaveType").value;
-            const timeRange = document.getElementById("leaveTimeRange").value; 
-            
-            if (!sDateStr) return alert("請選擇請假日期");
-
-            const finalEDateStr = eDateStr || sDateStr;
-            
-            let dateList = [];
-            let startObj = new Date(sDateStr + "T00:00:00");
-            let endObj = new Date(finalEDateStr + "T00:00:00");
-
-            if (startObj > endObj) {
-                return alert("格式錯誤：開始日期不能大於結束日期");
-            }
-
-            let loopDate = new Date(startObj);
-            while (loopDate <= endObj) {
-                let y = loopDate.getFullYear();
-                let m = String(loopDate.getMonth() + 1).padStart(2, '0');
-                let d = String(loopDate.getDate()).padStart(2, '0');
-                dateList.push(`${y}-${m}-${d}`); 
-                loopDate.setDate(loopDate.getDate() + 1);
-            }
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ 
-                    action: "addLeave", 
-                    token: token, 
-                    dateList: dateList, 
-                    type: type, 
-                    timeRange: timeRange 
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("連續假單送出成功！試算表已同步寫入每日紀錄。");
-                    clearLeaveForm(); 
-                    fetchLeaveRecords();
-                } else {
-                    alert("錯誤：" + data.message);
-                    if(data.message.includes("過期")) logout();
-                }
-            }).catch(() => alert("發送失敗，請確認後端部署 URL 正常運作中"));
-        }
-
-        function deleteLeave(leaveId, dateStr) {
-            if (!confirm(`您確定要取消 ${dateStr} 的這筆請假紀錄嗎？`)) return;
-
-            const token = localStorage.getItem("session_token");
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "deleteLeave", token: token, leaveId: leaveId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    fetchLeaveRecords(); 
-                } else {
-                    alert("撤銷失敗：" + data.message);
-                }
-            });
-        }
-
-        function openNicknameModal() {
-            const currentName = localStorage.getItem("emp_name");
-            const newName = prompt("請輸入您想變更的新暱稱/真實姓名：", currentName);
-            if (newName === null) return; 
-            if (!newName.trim()) return alert("暱稱不能為空");
-
-            const token = localStorage.getItem("session_token");
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "updateNickname", token: token, newName: newName })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    alert("暱稱修改成功！");
-                    localStorage.setItem("emp_name", data.newName.trim());
-                    currentLoggedInName = data.newName.trim(); 
-                    document.getElementById("userName").innerText = data.newName.trim();
-                    fetchLeaveRecords(); 
-                } else {
-                    alert("修改失敗：" + data.message);
-                }
-            });
-        }
-
-        function changePassword() {
-            const account = document.getElementById("chgAcc").value;
-            const oldPassword = document.getElementById("chgOldPwd").value;
-            const newPassword = document.getElementById("chgNewPwd").value;
-            if(!account || !oldPassword || !newPassword) return alert("請填寫所有欄位");
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "changePassword", account: account, oldPassword: oldPassword, newPassword: newPassword })
-            })
-            .then(res => res.json())
-            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
-        }
-
-        function forgotPassword() {
-            const account = document.getElementById("forAcc").value;
-            const name = document.getElementById("forName").value;
-            if(!account || !name) return alert("請填寫所有欄位");
-
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "forgotPassword", account: account, name: name })
-            })
-            .then(res => res.json())
-            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
-        }
-
-        function logout() {
-            localStorage.removeItem("session_token");
-            localStorage.removeItem("emp_name");
-            currentLoggedInName = "";
-            switchPanel("loginSection");
-            document.getElementById("acc").value = "";
-            document.getElementById("pwd").value = "";
-        }
-
-        function escapeHtml(string) {
-            return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
