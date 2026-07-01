@@ -65,7 +65,7 @@
             width: auto; 
             padding: 6px 14px; 
             background-color: var(--primary) !important; 
-            color: #ffffff !important;                     
+            color: #ffffff !important;                      
             border: 1px solid var(--primary) !important;  
             border-radius: 6px; 
             cursor: pointer; 
@@ -247,6 +247,435 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzneVEwKI-XpoLbsIzdDwb1pv4NfjpQfcZVFQJXZCr7rXbDyVqtZATkWgwu5F2rKyip/exec"; 
+
+        let currentYear, currentMonth;
+        let globalLeaveRecords = [];
+        let currentLoggedInName = "";
+
+        let rangeStart = null;
+        let rangeEnd = null;
+
+        // 分頁控制全域變數
+        let currentPage = 1;
+        const pageSize = 6;              // 每頁顯示的假單筆數
+        let filteredUpcomingLeaves = []; // 儲存篩選後的近期休假同仁陣列
+
+        // 初始化系統
+        window.onload = function() {
+            const today = new Date();
+            currentYear = today.getFullYear();
+            currentMonth = today.getMonth();
+
+            const savedToken = localStorage.getItem("session_token");
+            const savedName = localStorage.getItem("emp_name");
+            if (savedToken && savedName) {
+                currentLoggedInName = savedName.trim();
+                unlockSystem(savedName.trim());
+            }
+        };
+
+        // 切換頁面區塊
+        function switchPanel(panelId) {
+            document.getElementById("loginSection").classList.add("hidden");
+            document.getElementById("changePwdSection").classList.add("hidden");
+            document.getElementById("forgotPwdSection").classList.add("hidden");
+            document.getElementById("mainSystem").classList.add("hidden");
+            document.getElementById(panelId).classList.remove("hidden");
+        }
+
+        // 驗證通過解鎖系統
+        function unlockSystem(name) {
+            currentLoggedInName = name;
+            document.getElementById("userName").innerText = name;
+            switchPanel("mainSystem");
+            fetchLeaveRecords(); 
+        }
+
+        // 同仁登入邏輯
+        function login() {
+            const account = document.getElementById("acc").value;
+            const password = document.getElementById("pwd").value;
+            if(!account || !password) return alert("請輸入帳密");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "login", account: account, password: password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem("session_token", data.token);
+                    localStorage.setItem("emp_name", data.name.trim());
+                    unlockSystem(data.name.trim());
+                } else {
+                    alert("登入失敗：" + data.message);
+                }
+            }).catch(() => alert("連線後端 API 異常"));
+        }
+
+        // 輔助函式：將各種奇怪的日期格式統一壓縮成標準 yyyy-MM-dd 字串
+        function formatToStandardDateStr(rawDate) {
+            if (!rawDate) return "";
+            try {
+                let dObj = new Date(rawDate);
+                if (isNaN(dObj.getTime())) {
+                    dObj = new Date(String(rawDate).trim().replace(/\//g, '-'));
+                }
+                if (isNaN(dObj.getTime())) {
+                    return String(rawDate).trim();
+                }
+                let y = dObj.getFullYear();
+                let m = String(dObj.getMonth() + 1).padStart(2, '0');
+                let d = String(dObj.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            } catch (e) {
+                return String(rawDate).trim();
+            }
+        }
+
+        // 從後端 API 抓取假單明細
+        function fetchLeaveRecords() {
+            fetch(GAS_URL)
+            .then(res => res.json())
+            .then(data => {
+                globalLeaveRecords = data.map(item => {
+                    if (item.date) {
+                        item.date = formatToStandardDateStr(item.date);
+                    }
+                    return item;
+                });
+                
+                // 資料載入時，初始化篩選後的近期資料，並將頁碼重設回第一頁
+                const todayStr = formatToStandardDateStr(new Date());
+                filteredUpcomingLeaves = globalLeaveRecords
+                    .filter(item => item.date >= todayStr)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                currentPage = 1;
+
+                renderRightSortedList();
+                renderCalendar();
+            });
+        }
+
+        // 具備分頁渲染機制的右側清單
+        function renderRightSortedList() {
+            const container = document.getElementById("leaveListContainer");
+            const pagContainer = document.getElementById("paginationContainer");
+            container.innerHTML = "";
+
+            if(filteredUpcomingLeaves.length === 0) {
+                container.innerHTML = `<div style="text-align:center;color:var(--text-muted);margin-top:20px;">近期尚無同仁排休</div>`;
+                pagContainer.style.display = "none"; 
+                return;
+            }
+            
+            pagContainer.style.display = "flex";
+
+            // 計算總頁數與切割當前頁面資料
+            const totalPages = Math.ceil(filteredUpcomingLeaves.length / pageSize);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const pageData = filteredUpcomingLeaves.slice(startIndex, endIndex);
+
+            // 渲染當前頁面的假單卡片
+            pageData.forEach(item => {
+                let deleteBtnHtml = "";
+                if (item.name.trim() === currentLoggedInName.trim() && item.leaveId) {
+                    deleteBtnHtml = `<button class="btn-delete-leave" onclick="deleteLeave('${item.leaveId}', '${item.date}')">取消請假</button>`;
+                }
+
+                let cardHtml = `
+                    <div class="leave-item" style="border-left: 5px solid var(--color-${item.type}, #6a737d)">
+                        <div class="info-box">
+                            <div class="name">${escapeHtml(item.name)} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(${escapeHtml(item.timeRange)})</span></div>
+                            <div class="date">📅 ${escapeHtml(item.date)}</div>
+                        </div>
+                        <span class="tag" style="background-color: var(--color-${item.type}, #6a737d)">${escapeHtml(item.type)}</span>
+                        ${deleteBtnHtml}
+                    </div>`;
+                container.innerHTML += cardHtml;
+            });
+
+            // 更新分頁按鈕與文字狀態
+            document.getElementById("pageInfo").innerText = `${currentPage} / ${totalPages}`;
+            document.getElementById("prevPageBtn").disabled = (currentPage === 1);
+            document.getElementById("nextPageBtn").disabled = (currentPage === totalPages);
+            
+            // 每次切換頁面時自動回到右側小列表的頂端
+            container.scrollTop = 0;
+        }
+
+        // 分頁切換控制
+        function changePage(direction) {
+            currentPage += direction;
+            renderRightSortedList();
+        }
+
+        // 渲染日曆網格
+        function renderCalendar() {
+            const grid = document.getElementById("calendarGrid");
+            const title = document.getElementById("calendarTitle");
+            grid.innerHTML = "";
+
+            title.innerText = `${currentYear} 年 ${currentMonth + 1} 月`;
+
+            const weeks = ['日', '一', '二', '三', '四', '五', '六'];
+            weeks.forEach(w => grid.innerHTML += `<div class="weekday">${w}</div>`);
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const prevTotalDays = new Date(currentYear, currentMonth, 0).getDate();
+
+            for(let i = firstDayIndex - 1; i >= 0; i--) {
+                grid.innerHTML += `<div class="day other-month"><span class="day-num">${prevTotalDays - i}</span></div>`;
+            }
+
+            const todayObj = new Date();
+            for(let d = 1; d <= totalDays; d++) {
+                let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let isToday = (todayObj.getFullYear()===currentYear && todayObj.getMonth()===currentMonth && todayObj.getDate()===d);
+                
+                let dayLeaves = globalLeaveRecords.filter(r => r.date === dateStr);
+                let labelsHtml = '<div class="day-labels">';
+                dayLeaves.forEach(leave => {
+                    labelsHtml += `<div class="user-label" style="background-color: var(--color-${leave.type}, #6a737d)" title="${leave.name}-${leave.type}(${leave.timeRange})">${escapeHtml(leave.name)}-${leave.type}(${escapeHtml(leave.timeRange)})</div>`;
+                });
+                labelsHtml += '</div>';
+
+                let dayClass = isToday ? "day today" : "day";
+                grid.innerHTML += `
+                    <div class="${dayClass}" id="cell-${dateStr}" data-date="${dateStr}" onclick="handleDateClick('${dateStr}')">
+                        <span class="day-num">${d}</span>
+                        ${labelsHtml}
+                    </div>`;
+            }
+
+            const currentGridCount = firstDayIndex + totalDays;
+            const nextMonthNeed = 42 - currentGridCount;
+            for(let n = 1; n <= nextMonthNeed; n++) {
+                grid.innerHTML += `<div class="day other-month"><span class="day-num">${n}</span></div>`;
+            }
+
+            syncRangeUI(); 
+        }
+
+        // 點擊日曆選取連續日期
+        function handleDateClick(dateStr) {
+            if (!rangeStart || (rangeStart && rangeEnd)) {
+                rangeStart = dateStr;
+                rangeEnd = null;
+                document.getElementById("startDate").value = dateStr;
+                document.getElementById("endDate").value = dateStr; 
+            } else if (rangeStart && !rangeEnd) {
+                if (new Date(dateStr) < new Date(rangeStart)) {
+                    rangeStart = dateStr;
+                    document.getElementById("startDate").value = dateStr;
+                    document.getElementById("endDate").value = dateStr;
+                } else {
+                    rangeEnd = dateStr;
+                    document.getElementById("endDate").value = dateStr;
+                }
+            }
+            syncRangeUI();
+        }
+
+        // 更新日曆連續假期選取視覺樣式
+        function syncRangeUI() {
+            const sVal = document.getElementById("startDate").value;
+            const eVal = document.getElementById("endDate").value;
+            
+            document.querySelectorAll('.calendar-grid .day').forEach(el => {
+                el.classList.remove('selected-endpoint', 'selected-range');
+            });
+
+            if (!sVal) return;
+
+            rangeStart = sVal;
+            rangeEnd = eVal || sVal;
+
+            let sDate = new Date(rangeStart);
+            let eDate = new Date(rangeEnd);
+
+            document.querySelectorAll('.calendar-grid .day[data-date]').forEach(el => {
+                let cellDateStr = el.getAttribute('data-date');
+                let cellDate = new Date(cellDateStr);
+
+                if (cellDateStr === rangeStart || cellDateStr === rangeEnd) {
+                    el.classList.add('selected-endpoint'); 
+                } else if (cellDate > sDate && cellDate < eDate) {
+                    el.classList.add('selected-range');    
+                }
+            });
+        }
+
+        // 月份切換控制
+        function moveMonth(dir) {
+            currentMonth += dir;
+            if(currentMonth > 11) { currentMonth = 0; currentYear++; }
+            if(currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        }
+
+        // 重設表單
+        function clearLeaveForm() {
+            document.getElementById("startDate").value = "";  
+            document.getElementById("endDate").value = "";  
+            document.getElementById("leaveType").selectedIndex = 0; 
+            document.getElementById("leaveTimeRange").selectedIndex = 0; 
+            rangeStart = null;
+            rangeEnd = null;
+            document.querySelectorAll('.calendar-grid .day').forEach(el => {
+                el.classList.remove('selected-endpoint', 'selected-range');
+            }); 
+        }
+
+        // 送出請假申請單
+        function submitLeave() {
+            const token = localStorage.getItem("session_token");
+            const sDateStr = document.getElementById("startDate").value;
+            const eDateStr = document.getElementById("endDate").value;
+            const type = document.getElementById("leaveType").value;
+            const timeRange = document.getElementById("leaveTimeRange").value; 
+            
+            if (!sDateStr) return alert("請選擇請假日期");
+
+            const finalEDateStr = eDateStr || sDateStr;
+            
+            let dateList = [];
+            let startObj = new Date(sDateStr + "T00:00:00");
+            let endObj = new Date(finalEDateStr + "T00:00:00");
+
+            if (startObj > endObj) {
+                return alert("格式錯誤：開始日期不能大於結束日期");
+            }
+
+            let loopDate = new Date(startObj);
+            while (loopDate <= endObj) {
+                let y = loopDate.getFullYear();
+                let m = String(loopDate.getMonth() + 1).padStart(2, '0');
+                let d = String(loopDate.getDate()).padStart(2, '0');
+                dateList.push(`${y}-${m}-${d}`); 
+                loopDate.setDate(loopDate.getDate() + 1);
+            }
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "addLeave", 
+                    token: token, 
+                    dateList: dateList, 
+                    type: type, 
+                    timeRange: timeRange 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("連續假單送出成功！試算表已同步寫入每日紀錄。");
+                    clearLeaveForm(); 
+                    fetchLeaveRecords();
+                } else {
+                    alert("錯誤：" + data.message);
+                    if(data.message.includes("過期")) logout();
+                }
+            }).catch(() => alert("發送失敗，請確認後端部署 URL 正常運作中"));
+        }
+
+        // 取消請假單
+        function deleteLeave(leaveId, dateStr) {
+            if (!confirm(`您確定要取消 ${dateStr} 的這筆請假紀錄嗎？`)) return;
+
+            const token = localStorage.getItem("session_token");
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "deleteLeave", token: token, leaveId: leaveId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    fetchLeaveRecords(); 
+                } else {
+                    alert("撤銷失敗：" + data.message);
+                }
+            });
+        }
+
+        // 修改員工暱稱
+        function openNicknameModal() {
+            const currentName = localStorage.getItem("emp_name");
+            const newName = prompt("請輸入您想變更的新暱稱/真實姓名：", currentName);
+            if (newName === null) return; 
+            if (!newName.trim()) return alert("暱稱不能為空");
+
+            const token = localStorage.getItem("session_token");
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "updateNickname", token: token, newName: newName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("暱稱修改成功！");
+                    localStorage.setItem("emp_name", data.newName.trim());
+                    currentLoggedInName = data.newName.trim(); 
+                    document.getElementById("userName").innerText = data.newName.trim();
+                    fetchLeaveRecords(); 
+                } else {
+                    alert("修改失敗：" + data.message);
+                }
+            });
+        }
+
+        // 修改個人密碼
+        function changePassword() {
+            const account = document.getElementById("chgAcc").value;
+            const oldPassword = document.getElementById("chgOldPwd").value;
+            const newPassword = document.getElementById("chgNewPwd").value;
+            if(!account || !oldPassword || !newPassword) return alert("請填寫所有欄位");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "changePassword", account: account, oldPassword: oldPassword, newPassword: newPassword })
+            })
+            .then(res => res.json())
+            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
+        }
+
+        // 忘記密碼安全重設
+        function forgotPassword() {
+            const account = document.getElementById("forAcc").value;
+            const name = document.getElementById("forName").value;
+            if(!account || !name) return alert("請填寫所有欄位");
+
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "forgotPassword", account: account, name: name })
+            })
+            .then(res => res.json())
+            .then(data => { alert(data.message); if(data.success) switchPanel("loginSection"); });
+        }
+
+        // 同仁安全登出
+        function logout() {
+            localStorage.removeItem("session_token");
+            localStorage.removeItem("emp_name");
+            currentLoggedInName = "";
+            switchPanel("loginSection");
+            document.getElementById("acc").value = "";
+            document.getElementById("pwd").value = "";
+        }
+
+        // XSS 安全性過濾
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, s => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
+        }
+    </script>
 </body>
 </html>
