@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企業排休與行事曆管理系統 (時間範圍篩選強固版)</title>
+    <title>核醫科預假登記</title>
     <style>
         :root {
             --primary: #1e3a8a;
@@ -145,10 +145,10 @@
 <body>
 
     <div id="loginSection" class="login-container">
-        <h3>🔒 員工系統驗證</h3>
-        <label>使用者帳號</label>
+        <h3>🔒 員工系統登入</h3>
+        <label>帳號</label>
         <input type="text" id="acc" placeholder="請輸入帳號">
-        <label>身分驗證密碼</label>
+        <label>密碼</label>
         <input type="password" id="pwd" placeholder="請輸入密碼">
         <button onclick="login()">登入系統</button>
         <div class="nav-links">
@@ -176,7 +176,7 @@
 
     <div id="mainSystem" class="hidden">
         <div class="main-header">
-            <h2>💼 內部同仁請假管理系統</h2>
+            <h2>💼 核醫科預假管理系統</h2>
             <div>
                 <span style="margin-right: 15px; font-size:14px;">歡迎，<b id="userName" style="color:var(--calendar-selected);"></b></span>
                 <button class="btn-secondary" style="width:auto; padding:6px 12px; font-size:13px; margin-right:5px;" onclick="openNicknameModal()">修改暱稱</button>
@@ -206,7 +206,7 @@
                             <input type="date" id="startDate" onchange="syncRangeUI()">
                         </div>
                         <div style="flex:1;">
-                            <label>請假結束日期 (單天請假同開始日期)</label>
+                            <label>請假結束日期</label>
                             <input type="date" id="endDate" onchange="syncRangeUI()">
                         </div>
                         <div style="flex:1;">
