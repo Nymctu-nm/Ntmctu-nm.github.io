@@ -42,7 +42,6 @@
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); }
         .calendar-header h3 { color: var(--text-main) !important; border: none !important; padding: 0 !important; margin: 0 !important; font-weight: bold; }
         
-        /* 【修改核心】上個月、下個月按鈕：直接固定為深藍色底、白字，且徹底拔除 hover 變色效果 */
         .calendar-header button { 
             width: auto; 
             padding: 6px 14px; 
@@ -87,7 +86,7 @@
         .day.selected-range { background-color: var(--calendar-range) !important; border: 1px dashed var(--calendar-selected) !important; }
         
         /* 行事曆標籤 */
-        .day-labels { width: 100%; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+        .day-labels { width: 100%; display: flex; flex-direction: column; gap: 4px; overflow: hidden; margin-top: 4px; }
         .user-label { 
             font-size: 11px; padding: 3px 5px; border-radius: 4px; color: #ffffff; text-align: left; 
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; line-height: 1.2; 
@@ -281,11 +280,38 @@
             }).catch(() => alert("連線後端 API 異常"));
         }
 
+        // 輔助函式：將各種奇怪的日期格式統一壓縮成標準 yyyy-MM-dd 字串
+        function formatToStandardDateStr(rawDate) {
+            if (!rawDate) return "";
+            try {
+                let dObj = new Date(rawDate);
+                // 處理可能因斜線或空格造成的失效物件
+                if (isNaN(dObj.getTime())) {
+                    dObj = new Date(String(rawDate).trim().replace(/\//g, '-'));
+                }
+                if (isNaN(dObj.getTime())) {
+                    return String(rawDate).trim();
+                }
+                let y = dObj.getFullYear();
+                let m = String(dObj.getMonth() + 1).padStart(2, '0');
+                let d = String(dObj.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            } catch (e) {
+                return String(rawDate).trim();
+            }
+        }
+
         function fetchLeaveRecords() {
             fetch(GAS_URL)
             .then(res => res.json())
             .then(data => {
-                globalLeaveRecords = data;
+                // 將所有抓到的紀錄在前端先進行日期格式標準化清洗
+                globalLeaveRecords = data.map(item => {
+                    if (item.date) {
+                        item.date = formatToStandardDateStr(item.date);
+                    }
+                    return item;
+                });
                 renderRightSortedList();
                 renderCalendar();
             });
@@ -294,7 +320,7 @@
         function renderRightSortedList() {
             const container = document.getElementById("leaveListContainer");
             container.innerHTML = "";
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = formatToStandardDateStr(new Date());
 
             let upcomingLeaves = globalLeaveRecords
                 .filter(item => item.date >= todayStr)
@@ -347,9 +373,11 @@
                 let dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 let isToday = (todayObj.getFullYear()===currentYear && todayObj.getMonth()===currentMonth && todayObj.getDate()===d);
                 
+                // 這裡經過清洗後，r.date 與 dateStr 皆為精準的 "yyyy-MM-dd"
                 let dayLeaves = globalLeaveRecords.filter(r => r.date === dateStr);
                 let labelsHtml = '<div class="day-labels">';
                 dayLeaves.forEach(leave => {
+                    // 已修復：動態套用對應的假別色彩變數 --color-事假, --color-特休 等
                     labelsHtml += `<div class="user-label" style="background-color: var(--color-${leave.type}, #6a737d)" title="${leave.name}-${leave.type}(${leave.timeRange})">${escapeHtml(leave.name)}-${leave.type}(${escapeHtml(leave.timeRange)})</div>`;
                 });
                 labelsHtml += '</div>';
@@ -437,7 +465,6 @@
             }); 
         }
 
-        // 【修改核心】由前端拆解日期字串陣列，徹底斷絕時區誤差導致的空白 Bug
         function submitLeave() {
             const token = localStorage.getItem("session_token");
             const sDateStr = document.getElementById("startDate").value;
@@ -449,7 +476,6 @@
 
             const finalEDateStr = eDateStr || sDateStr;
             
-            // 在前端利用本地端時間安全的計算出日期列表
             let dateList = [];
             let startObj = new Date(sDateStr + "T00:00:00");
             let endObj = new Date(finalEDateStr + "T00:00:00");
@@ -463,7 +489,7 @@
                 let y = loopDate.getFullYear();
                 let m = String(loopDate.getMonth() + 1).padStart(2, '0');
                 let d = String(loopDate.getDate()).padStart(2, '0');
-                dateList.push(`${y}-${m}-${d}`); // 壓製成純文字的標準格式 "yyyy-MM-dd"
+                dateList.push(`${y}-${m}-${d}`); 
                 loopDate.setDate(loopDate.getDate() + 1);
             }
 
@@ -472,7 +498,7 @@
                 body: JSON.stringify({ 
                     action: "addLeave", 
                     token: token, 
-                    dateList: dateList, // 直接將字串陣列發送給後台
+                    dateList: dateList, 
                     type: type, 
                     timeRange: timeRange 
                 })
